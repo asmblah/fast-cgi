@@ -47,9 +47,9 @@ class PhpFpmLauncher implements LauncherInterface
         $processResource = proc_open(
             sprintf(
                 'exec %s -d open_basedir=%s --fpm-config=%s --nodaemonize',
-                $this->phpFpmBinaryPath,
-                $baseDir,
-                $this->configFilePath
+                escapeshellarg($this->phpFpmBinaryPath),
+                escapeshellarg($baseDir),
+                escapeshellarg($this->configFilePath)
             ),
             $descriptorSpec,
             $pipes

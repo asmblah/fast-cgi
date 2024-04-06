@@ -46,9 +46,9 @@ class PhpCgiLauncher implements LauncherInterface
         $processResource = proc_open(
             sprintf(
                 'PHP_FCGI_CHILDREN=0 PHP_FCGI_MAX_REQUESTS=1000 exec %s -d open_basedir=%s -b %s',
-                $this->phpCgiBinaryPath,
-                $baseDir,
-                $socketPath
+                escapeshellarg($this->phpCgiBinaryPath),
+                escapeshellarg($baseDir),
+                escapeshellarg($socketPath)
             ),
             $descriptorSpec,
             $pipes
