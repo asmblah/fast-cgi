@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Asmblah\FastCgi\Connection;
 
 use hollodotme\FastCGI\Client;
+use hollodotme\FastCGI\SocketConnections\Defaults;
 use hollodotme\FastCGI\SocketConnections\UnixDomainSocket;
 
 /**
@@ -25,13 +26,23 @@ use hollodotme\FastCGI\SocketConnections\UnixDomainSocket;
  */
 class Connector implements ConnectorInterface
 {
+    public function __construct(
+        private readonly int $connectTimeout = Defaults::CONNECT_TIMEOUT,
+        private readonly int $readWriteTimeout = Defaults::READ_WRITE_TIMEOUT
+    ) {
+    }
+
     /**
      * @inheritDoc
      */
     public function connect(string $socketPath): ConnectionInterface
     {
         $fastCgiClient = new Client();
-        $fastCgiConnection = new UnixDomainSocket($socketPath);
+        $fastCgiConnection = new UnixDomainSocket(
+            $socketPath,
+            $this->connectTimeout,
+            $this->readWriteTimeout
+        );
 
         return new Connection($fastCgiClient, $fastCgiConnection);
     }

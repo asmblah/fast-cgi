@@ -28,7 +28,8 @@ class PhpFpmLauncher implements LauncherInterface
 {
     public function __construct(
         private readonly string $phpFpmBinaryPath,
-        private readonly string $configFilePath
+        private readonly string $configFilePath,
+        private readonly string $extraArguments = ''
     ) {
     }
 
@@ -46,10 +47,11 @@ class PhpFpmLauncher implements LauncherInterface
         // Spawn a long-running FastCGI server for handling FastCGI requests.
         $processResource = proc_open(
             sprintf(
-                'exec %s -d open_basedir=%s --fpm-config=%s --nodaemonize',
+                'exec %s -d open_basedir=%s --fpm-config=%s --nodaemonize%s',
                 escapeshellarg($this->phpFpmBinaryPath),
                 escapeshellarg($baseDir),
-                escapeshellarg($this->configFilePath)
+                escapeshellarg($this->configFilePath),
+                $this->extraArguments !== '' ? ' ' . $this->extraArguments : ''
             ),
             $descriptorSpec,
             $pipes

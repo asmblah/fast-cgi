@@ -30,26 +30,29 @@ use hollodotme\FastCGI\Requests\PostRequest;
  */
 class PhpCgiTest extends AbstractTestCase
 {
+    private string $baseDir;
     private FastCgi $fastCgi;
+    private string $phpCgiBinaryPath;
     private SessionInterface $session;
+    private string $socketPath;
+    private string $wwwDir;
 
     public function setUp(): void
     {
-        $baseDir = dirname(__DIR__, 3);
-        $wwwDir = 'tests/Functional/Fixtures/www';
-        $phpCgiBinaryPath = dirname(PHP_BINARY) . '/php-cgi';
+        $this->baseDir = dirname(__DIR__, 3);
+        $this->wwwDir = 'tests/Functional/Fixtures/www';
+        $this->phpCgiBinaryPath = dirname(PHP_BINARY) . '/php-cgi';
 
-        $socketDir = $baseDir . '/var/test';
+        $socketDir = $this->baseDir . '/var/test';
         @mkdir($socketDir, 0777, true);
-        $socketPath = $socketDir . '/php-cgi.test.sock';
+        $this->socketPath = $socketDir . '/php-cgi.test.sock';
 
         $this->fastCgi = new FastCgi(
-            baseDir: $baseDir,
-            wwwDir: $wwwDir,
-            socketPath: $socketPath,
-            launcher: new PhpCgiLauncher($phpCgiBinaryPath)
+            baseDir: $this->baseDir,
+            wwwDir: $this->wwwDir,
+            socketPath: $this->socketPath,
+            launcher: new PhpCgiLauncher($this->phpCgiBinaryPath)
         );
-        $this->session = $this->fastCgi->start();
     }
 
     public function tearDown(): void
@@ -59,6 +62,8 @@ class PhpCgiTest extends AbstractTestCase
 
     public function testCanMakeFastCgiGetRequestViaSendGetRequest(): void
     {
+        $this->session = $this->fastCgi->start();
+
         $response = $this->session->sendGetRequest(
             'get_method_front_controller.php',
             '/path/to/my-page',
@@ -72,6 +77,8 @@ class PhpCgiTest extends AbstractTestCase
 
     public function testCanMakeFastCgiPostRequestViaSendPostRequest(): void
     {
+        $this->session = $this->fastCgi->start();
+
         $response = $this->session->sendPostRequest(
             'post_method_front_controller.php',
             '/path/to/my-page',
@@ -89,6 +96,7 @@ class PhpCgiTest extends AbstractTestCase
 
     public function testCanMakeFastCgiGetRequestViaSendRequest(): void
     {
+        $this->session = $this->fastCgi->start();
         $request = new GetRequest($this->session->getWwwDir() . '/get_method_front_controller.php', '');
         $request->setRequestUri('/path/to/my-page');
         $request->setCustomVar('QUERY_STRING', 'greeting=Hello');
@@ -100,6 +108,7 @@ class PhpCgiTest extends AbstractTestCase
 
     public function testCanMakeFastCgiPostRequestViaSendRequest(): void
     {
+        $this->session = $this->fastCgi->start();
         $request = PostRequest::newWithRequestContent(
             $this->session->getWwwDir() . '/post_method_front_controller.php',
             new UrlEncodedFormData(['message' => 'Another surprise!'])
@@ -117,6 +126,8 @@ class PhpCgiTest extends AbstractTestCase
 
     public function testCanMakeMultipleFastCgiGetRequestsToTheSameWorkerProcess(): void
     {
+        $this->session = $this->fastCgi->start();
+
         $response1 = $this->session->sendGetRequest(
             'get_method_front_controller.php',
             '/path/to/my-page',
@@ -135,5 +146,27 @@ class PhpCgiTest extends AbstractTestCase
 
         static::assertSame('Hello from the front controller!', $response1->getBody());
         static::assertSame('And hello again from the front controller!', $response2->getBody());
+    }
+
+    public function testCanProvideAdditionalCommandLineArguments(): void
+    {
+        $this->fastCgi = new FastCgi(
+            baseDir: $this->baseDir,
+            wwwDir: $this->wwwDir,
+            socketPath: $this->socketPath,
+            launcher: new PhpCgiLauncher($this->phpCgiBinaryPath, '-d my_entry=456')
+        );
+
+        $this->session = $this->fastCgi->start();
+
+        $response = $this->session->sendGetRequest(
+            'fetch_ini_entry.php',
+            '/path/to/my-page',
+            [
+                'entry' => 'my_entry',
+            ]
+        );
+
+        static::assertSame('INI entry value: 456', $response->getBody());
     }
 }

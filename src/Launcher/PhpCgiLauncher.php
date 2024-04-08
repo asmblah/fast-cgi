@@ -27,7 +27,8 @@ use Asmblah\FastCgi\Process\ProcessInterface;
 class PhpCgiLauncher implements LauncherInterface
 {
     public function __construct(
-        private readonly string $phpCgiBinaryPath
+        private readonly string $phpCgiBinaryPath,
+        private readonly string $extraArguments = ''
     ) {
     }
 
@@ -45,10 +46,11 @@ class PhpCgiLauncher implements LauncherInterface
         // Spawn a long-running FastCGI server for handling FastCGI requests.
         $processResource = proc_open(
             sprintf(
-                'PHP_FCGI_CHILDREN=0 PHP_FCGI_MAX_REQUESTS=1000 exec %s -d open_basedir=%s -b %s',
+                'PHP_FCGI_CHILDREN=0 PHP_FCGI_MAX_REQUESTS=1000 exec %s -d open_basedir=%s -b %s%s',
                 escapeshellarg($this->phpCgiBinaryPath),
                 escapeshellarg($baseDir),
-                escapeshellarg($socketPath)
+                escapeshellarg($socketPath),
+                $this->extraArguments !== '' ? ' ' . $this->extraArguments : ''
             ),
             $descriptorSpec,
             $pipes
